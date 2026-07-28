@@ -479,3 +479,33 @@ body {
 .animate-shake {
   animation: shake 0.5s ease-in-out;
 }
+
+
+
+
+
+
+
+
+/* exame notify */
+.scrollRow {
+  padding-bottom: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior-inline: contain;
+  scroll-behavior: smooth;
+}
+
+.scrollRow::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.scrollRow::-webkit-scrollbar-track {
+  display: none;
+}
+
+.scrollRow::-webkit-scrollbar-thumb {
+  display: none;
+}

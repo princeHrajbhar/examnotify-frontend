@@ -4,7 +4,7 @@
 import React from 'react'
 
 import ListSection from '@/components/blog/BlogListing'
-import HeroSlider from '@/components/home/HeroSlider'
+import HeroSlider from '@/components/blog/BlogHero'
 
 const page = () => {
   return (

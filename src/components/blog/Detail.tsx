@@ -2,9 +2,8 @@
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useBlog } from '@/features/blog/hooks/useBlog';
 import { useCourse } from '@/features/course/hooks/useCourse';
 import {
@@ -15,8 +14,6 @@ import {
   BookOpenIcon,
   TagIcon,
   ClockIcon,
-  AcademicCapIcon,
-  PlayIcon,
   PlusIcon,
   MinusIcon,
 } from '@heroicons/react/24/outline';
@@ -72,16 +69,16 @@ const FAQSection: React.FC<FAQSectionProps> = ({
           >
             <button
               onClick={() => toggleFAQ(index)}
-              className="w-full text-left flex items-center justify-between gap-4 py-2 hover:text-[#016ab7] transition-colors duration-200"
+              className="w-full text-left flex items-center justify-between gap-4 py-2 hover:text-[#dc2626] transition-colors duration-200"
             >
               <span className="text-sm sm:text-base font-medium text-gray-900 flex-1">
                 {faq.question}
               </span>
               <span className="flex-shrink-0 ml-4">
                 {openIndex === index ? (
-                  <MinusIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#016ab7]" />
+                  <MinusIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#dc2626]" />
                 ) : (
-                  <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#016ab7]" />
+                  <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#dc2626]" />
                 )}
               </span>
             </button>
@@ -110,7 +107,6 @@ const FAQSection: React.FC<FAQSectionProps> = ({
 
 const BlogDetailPage = () => {
   const params = useParams();
-  const router = useRouter();
   const slug = params?.slug as string || '';
 
   const { useGetBlogBySlug, useGetBlogs } = useBlog();
@@ -368,7 +364,7 @@ const BlogDetailPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gradient-to-b from-white via-slate-50 to-green-50/40 py-8">
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             <div className="lg:col-span-3">
@@ -411,14 +407,14 @@ const BlogDetailPage = () => {
 
   if (error || !blog) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen bg-gradient-to-b from-white to-red-50/50 flex items-center justify-center px-4">
+        <div className="w-full max-w-md rounded-2xl border border-red-100 bg-white p-8 text-center shadow-lg">
           <div className="text-red-500 text-6xl mb-4">😕</div>
           <h2 className="text-2xl font-semibold text-gray-800 mb-2">Article not found</h2>
           <p className="text-gray-600 mb-6">The article you're looking for doesn't exist or has been removed.</p>
           <Link
             href="/blog"
-            className="inline-flex items-center px-6 py-3 bg-[#016ab7] text-white rounded-lg hover:bg-[#0158a0] hover:shadow-lg hover:shadow-[#016ab7]/25 transition-all"
+            className="inline-flex items-center px-6 py-3 bg-[#dc2626] text-white rounded-lg hover:bg-[#b91c1c] hover:shadow-lg hover:shadow-[#dc2626]/25 transition-all"
           >
             <ArrowLeftIcon className="h-5 w-5 mr-2" />
             Back to Blog
@@ -437,9 +433,9 @@ const BlogDetailPage = () => {
   });
 
   return (
-    <div className="min-h-screen bg-white w-full">
+    <div className="min-h-screen w-full bg-gradient-to-b from-white via-slate-50/40 to-green-50/30">
       <div
-        className="fixed left-0 top-0 z-[9999] h-[4px] w-full origin-left bg-[#016ab7] pointer-events-none"
+        className="fixed left-0 top-0 z-[9999] h-[4px] w-full origin-left bg-gradient-to-r from-red-600 via-red-500 to-green-600 pointer-events-none"
         style={{ transform: `scaleX(${readingProgress / 100})` }}
         role="progressbar"
         aria-label="Article reading progress"
@@ -452,11 +448,11 @@ const BlogDetailPage = () => {
         <div className="w-full max-w-[1600px] mx-auto">
           {/* Breadcrumb - Responsive */}
           <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6 overflow-x-auto pb-2">
-            <Link href="/" className="hover:text-[#016ab7] transition-colors whitespace-nowrap">
+            <Link href="/" className="hover:text-[#dc2626] transition-colors whitespace-nowrap">
               Home
             </Link>
             <ChevronRightIcon className="h-3 w-3 flex-shrink-0" />
-            <Link href="/blog" className="hover:text-[#016ab7] transition-colors whitespace-nowrap">
+            <Link href="/blog" className="hover:text-[#dc2626] transition-colors whitespace-nowrap">
               Blog
             </Link>
             {blog.category && (
@@ -464,7 +460,7 @@ const BlogDetailPage = () => {
                 <ChevronRightIcon className="h-3 w-3 flex-shrink-0" />
                 <Link 
                   href={`/blog/${blog.category.toLowerCase()}`}
-                  className="hover:text-[#016ab7] transition-colors whitespace-nowrap"
+                  className="hover:text-[#dc2626] transition-colors whitespace-nowrap"
                 >
                   {blog.category}
                 </Link>
@@ -504,8 +500,8 @@ const BlogDetailPage = () => {
                               onClick={() => scrollToHeading(heading.id)}
                               className={`block w-full text-left px-2 py-1.5 rounded transition-all text-xs sm:text-sm font-medium ${
                                 isActive
-                                  ? 'text-[#016ab7] border-l-2 border-[#016ab7]'
-                                  : 'text-gray-600 hover:text-[#016ab7]'
+                                  ? 'text-[#dc2626] border-l-2 border-[#dc2626]'
+                                  : 'text-gray-600 hover:text-[#dc2626]'
                               }`}
                             >
                               <span className="line-clamp-2">{heading.text}</span>
@@ -528,7 +524,7 @@ const BlogDetailPage = () => {
                       {blog.category && (
                         <Link
                           href={`/blog/${blog.category.toLowerCase()}`}
-                          className="inline-block bg-[#016ab7]/10 text-[#016ab7] text-xs sm:text-sm font-medium px-2.5 sm:px-3 py-1 rounded-full hover:bg-[#016ab7]/20 transition-colors"
+                          className="inline-block rounded-full border border-red-100 bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-600 transition-colors hover:border-red-200 hover:bg-red-100 sm:px-3 sm:text-sm"
                         >
                           {blog.category}
                         </Link>
@@ -545,22 +541,22 @@ const BlogDetailPage = () => {
 
                     <div className="flex flex-wrap items-center gap-3 sm:gap-4 md:gap-6 text-xs sm:text-sm text-gray-500">
                       <span className="flex items-center">
-                        <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                        <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 text-red-500" />
                         {blog.postingDate
                           ? format(new Date(blog.postingDate), 'MMMM d, yyyy')
                           : format(new Date(blog.createdAt), 'MMMM d, yyyy')}
                       </span>
                       <span className="flex items-center">
-                        <UserIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                        <UserIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 text-green-600" />
                         {blog.postedBy || 'Admin'}
                       </span>
                       <span className="flex items-center">
-                        <ClockIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                        <ClockIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2 text-red-500" />
                         {readingTime} min read
                       </span>
                       {blog.keyword && blog.keyword.length > 0 && (
                         <span className="flex items-center gap-1.5">
-                          <TagIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          <TagIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600" />
                           {blog.keyword.slice(0, 3).map((tag: string) => (
                             <span
                               key={tag}
@@ -603,7 +599,7 @@ const BlogDetailPage = () => {
               <div className="mt-4 sm:mt-6 text-center">
                 <Link
                   href="/blog"
-                  className="inline-flex items-center text-[#016ab7] hover:text-[#6cb84d] font-medium transition-colors text-sm sm:text-base"
+                  className="inline-flex items-center text-red-600 hover:text-green-600 font-semibold transition-colors text-sm sm:text-base"
                 >
                   <ArrowLeftIcon className="h-4 w-4 mr-1.5 sm:mr-2" />
                   Back to All Articles
@@ -627,7 +623,7 @@ const BlogDetailPage = () => {
                   {relatedBlogs.length > 0 && (
                     <div className="p-3 sm:p-4">
                       <div className="flex items-center gap-2 mb-2 sm:mb-3 sticky top-0 bg-white z-10 py-1">
-                        <BookOpenIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#016ab7]" />
+                        <BookOpenIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#dc2626]" />
                         <h3 className="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wider">
                           You Might Also Like
                         </h3>
@@ -648,13 +644,13 @@ const BlogDetailPage = () => {
                                     className="w-full h-full object-cover"
                                   />
                                 ) : (
-                                  <div className="w-full h-full flex items-center justify-center bg-[#016ab7]/10">
-                                    <BookOpenIcon className="h-6 w-6 sm:h-7 sm:w-7 text-[#016ab7]" />
+                                  <div className="w-full h-full flex items-center justify-center bg-[#dc2626]/10">
+                                    <BookOpenIcon className="h-6 w-6 sm:h-7 sm:w-7 text-[#dc2626]" />
                                   </div>
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <h4 className="text-xs sm:text-sm text-gray-700 group-hover:text-[#016ab7] transition-colors line-clamp-2 font-medium">
+                                <h4 className="text-xs sm:text-sm text-gray-700 group-hover:text-[#dc2626] transition-colors line-clamp-2 font-medium">
                                   {relatedBlog.title}
                                 </h4>
                                 <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
@@ -673,7 +669,7 @@ const BlogDetailPage = () => {
                       {relatedBlogs.length > 3 && (
                         <Link
                           href={`/blog/${blog.category?.toLowerCase()}`}
-                          className="block text-center text-xs sm:text-sm text-[#016ab7] hover:text-[#6cb84d] font-medium mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100"
+                          className="block text-center text-xs sm:text-sm text-[#dc2626] hover:text-[#16a34a] font-medium mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100"
                         >
                           View all related articles →
                         </Link>
@@ -696,7 +692,7 @@ const BlogDetailPage = () => {
                           >
                             <div className="p-2 sm:p-3 hover:bg-gray-50 transition-colors -mx-1.5 sm:-mx-2">
                               <div className="flex-1 min-w-0">
-                                <h4 className="text-xs sm:text-sm font-medium text-gray-900 group-hover:text-[#016ab7] transition-colors line-clamp-1">
+                                <h4 className="text-xs sm:text-sm font-medium text-gray-900 group-hover:text-[#dc2626] transition-colors line-clamp-1">
                                   {suggestedCourse.title}
                                 </h4>
                                 <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 line-clamp-1">{suggestedCourse.category}</p>
@@ -707,7 +703,7 @@ const BlogDetailPage = () => {
                       </div>
                       <Link
                         href="/course"
-                        className="mt-2 sm:mt-3 w-full px-3 sm:px-4 py-1.5 sm:py-2 bg-[#016ab7]/10 hover:bg-[#016ab7]/20 text-[#016ab7] rounded-lg text-xs sm:text-sm font-medium transition-colors flex items-center justify-center gap-1.5 sm:gap-2"
+                        className="mt-2 sm:mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 transition-colors hover:border-green-300 hover:bg-green-100 sm:gap-2 sm:px-4 sm:py-2 sm:text-sm"
                       >
                         View All Courses
                         <ChevronRightIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -728,7 +724,7 @@ const BlogDetailPage = () => {
           all: initial;
           display: block;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-          color: #1a202c;
+          color: #0f172a;
           line-height: 1.8;
           font-size: 16px;
         }
@@ -745,7 +741,7 @@ const BlogDetailPage = () => {
           margin-top: 1.5em !important;
           margin-bottom: 0.75em !important;
           line-height: 1.3 !important;
-          color: #1a202c !important;
+          color: #0f172a !important;
         }
 
         .blog-content-container h2 {
@@ -753,7 +749,7 @@ const BlogDetailPage = () => {
           font-weight: 700 !important;
           margin-top: 1.5em !important;
           margin-bottom: 0.75em !important;
-          color: #016ab7 !important;
+          color: #dc2626 !important;
           line-height: 1.3 !important;
           scroll-margin-top: 80px !important;
         }
@@ -764,7 +760,7 @@ const BlogDetailPage = () => {
           margin-top: 1.2em !important;
           margin-bottom: 0.5em !important;
           line-height: 1.4 !important;
-          color: #2d3748 !important;
+          color: #1e293b !important;
         }
 
         .blog-content-container h4 {
@@ -773,7 +769,7 @@ const BlogDetailPage = () => {
           margin-top: 1em !important;
           margin-bottom: 0.5em !important;
           line-height: 1.4 !important;
-          color: #2d3748 !important;
+          color: #1e293b !important;
         }
 
         .blog-content-container h5,
@@ -783,14 +779,14 @@ const BlogDetailPage = () => {
           margin-top: 0.8em !important;
           margin-bottom: 0.5em !important;
           line-height: 1.4 !important;
-          color: #4a5568 !important;
+          color: #475569 !important;
         }
 
         /* Paragraph styles */
         .blog-content-container p {
           margin-bottom: 1.2em !important;
           line-height: 1.8 !important;
-          color: #374151 !important;
+          color: #475569 !important;
           font-size: 1em !important;
         }
 
@@ -804,7 +800,7 @@ const BlogDetailPage = () => {
         .blog-content-container li {
           margin-bottom: 0.35em !important;
           line-height: 1.7 !important;
-          color: #374151 !important;
+          color: #475569 !important;
         }
 
         .blog-content-container ul li {
@@ -817,23 +813,23 @@ const BlogDetailPage = () => {
 
         /* Link styles */
         .blog-content-container a {
-          color: #016ab7 !important;
+          color: #dc2626 !important;
           text-decoration: underline !important;
           transition: color 0.2s ease !important;
         }
 
         .blog-content-container a:hover {
-          color: #6cb84d !important;
+          color: #16a34a !important;
         }
 
         /* Blockquote styles */
         .blog-content-container blockquote {
-          border-left: 4px solid #016ab7 !important;
+          border-left: 4px solid #dc2626 !important;
           padding-left: 1.2em !important;
           margin: 1.2em 0 !important;
           font-style: italic !important;
-          color: #4b5563 !important;
-          background: #f8fafc !important;
+          color: #475569 !important;
+          background: #f0fdf4 !important;
           padding: 1em 1.2em !important;
           border-radius: 0.5rem !important;
         }
@@ -849,30 +845,30 @@ const BlogDetailPage = () => {
         }
 
         .blog-content-container table thead {
-          background: #f7fafc !important;
+          background: #f0fdf4 !important;
         }
 
         .blog-content-container table th {
           padding: 12px 16px !important;
           text-align: left !important;
           font-weight: 600 !important;
-          color: #1a202c !important;
-          border-bottom: 2px solid #e2e8f0 !important;
-          background: #f7fafc !important;
+          color: #0f172a !important;
+          border-bottom: 2px solid #bbf7d0 !important;
+          background: #f0fdf4 !important;
         }
 
         .blog-content-container table td {
           padding: 12px 16px !important;
           border-bottom: 1px solid #e2e8f0 !important;
-          color: #374151 !important;
+          color: #475569 !important;
         }
 
         .blog-content-container table tr:hover {
-          background: #f8fafc !important;
+          background: #f0fdf4 !important;
         }
 
         .blog-content-container table tr:nth-child(even) {
-          background: #fafafa !important;
+          background: #f8fafc !important;
         }
 
         /* Image styles */
@@ -893,7 +889,7 @@ const BlogDetailPage = () => {
         /* Strong/Emphasis */
         .blog-content-container strong {
           font-weight: 700 !important;
-          color: #1a202c !important;
+          color: #0f172a !important;
         }
 
         .blog-content-container em {
@@ -902,16 +898,16 @@ const BlogDetailPage = () => {
 
         /* Code blocks */
         .blog-content-container code {
-          background: #f7fafc !important;
+          background: #f8fafc !important;
           padding: 0.2em 0.4em !important;
           border-radius: 4px !important;
           font-family: 'Courier New', monospace !important;
           font-size: 0.9em !important;
-          color: #016ab7 !important;
+          color: #dc2626 !important;
         }
 
         .blog-content-container pre {
-          background: #2d3748 !important;
+          background: #0f172a !important;
           color: #e2e8f0 !important;
           padding: 1em !important;
           border-radius: 0.5rem !important;
@@ -940,12 +936,12 @@ const BlogDetailPage = () => {
         }
         
         .max-h-\\[70vh\\]::-webkit-scrollbar-thumb {
-          background: #c1c1c1;
+          background: #dc2626;
           border-radius: 10px;
         }
         
         .max-h-\\[70vh\\]::-webkit-scrollbar-thumb:hover {
-          background: #a8a8a8;
+          background: #16a34a;
         }
 
         /* Responsive adjustments */
