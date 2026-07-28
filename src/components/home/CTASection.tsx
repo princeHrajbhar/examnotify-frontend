@@ -1,0 +1,60 @@
+"use client";
+
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+
+export default function CTASection() {
+  return (
+    <section className="py-16">
+      <div className="mx-auto max-w-7xl px-4">
+
+        <div className="relative overflow-hidden rounded-3xl border border-[#016ab7]/30 bg-gradient-to-br from-[#016ab7]/20 via-[#6cb84d]/10 to-[#016ab7]/5 shadow-lg shadow-[#016ab7]/10">
+
+          {/* Blue Glow - Enhanced */}
+          <div className="absolute -right-32 -top-32 h-80 w-80 rounded-full bg-[#016ab7]/30 blur-3xl animate-pulse" />
+
+          {/* Green Glow - Enhanced */}
+          <div className="absolute -left-20 bottom-0 h-48 w-48 rounded-full bg-[#6cb84d]/30 blur-3xl animate-pulse delay-1000" />
+
+          {/* Additional subtle glow */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-64 w-64 rounded-full bg-[#016ab7]/5 blur-3xl" />
+
+          <div className="relative z-10 flex flex-col gap-8 p-8 lg:flex-row lg:items-center lg:justify-between lg:p-10">
+
+            {/* Content */}
+            <div className="max-w-2xl">
+              <span className="inline-flex rounded-full border border-[#016ab7]/30 bg-gradient-to-r from-[#016ab7]/15 to-[#6cb84d]/15 px-3 py-1 text-sm font-medium text-[#016ab7] backdrop-blur-sm">
+                Start Learning Today
+              </span>
+
+              <h2 className="mt-4 text-3xl font-bold text-slate-900 lg:text-4xl">
+                Turn Your Skills Into{" "}
+                <span className="bg-gradient-to-r from-[#016ab7] to-[#6cb84d] bg-clip-text text-transparent">
+                  Career Opportunities
+                </span>
+              </h2>
+
+              <p className="mt-3 text-slate-600">
+                Learn from industry experts, build real-world projects,
+                and get job-ready with structured programs.
+              </p>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/course"
+                className="group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#016ab7] to-[#0158a0] px-6 py-3 font-semibold text-white transition-all hover:shadow-xl hover:shadow-[#016ab7]/30 hover:scale-[1.02]"
+              >
+                Explore Courses
+                <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+              </Link>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
+}

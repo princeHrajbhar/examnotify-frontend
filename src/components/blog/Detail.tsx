@@ -1,0 +1,996 @@
+// recorded-course\skillo-frontend\src\components\blog\Detail.tsx
+'use client';
+
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { useBlog } from '@/features/blog/hooks/useBlog';
+import { useCourse } from '@/features/course/hooks/useCourse';
+import {
+  CalendarIcon,
+  UserIcon,
+  ArrowLeftIcon,
+  ChevronRightIcon,
+  BookOpenIcon,
+  TagIcon,
+  ClockIcon,
+  AcademicCapIcon,
+  PlayIcon,
+  PlusIcon,
+  MinusIcon,
+} from '@heroicons/react/24/outline';
+import { format } from 'date-fns';
+import DOMPurify from 'dompurify';
+
+
+// ============================================
+// FAQ COMPONENT - No Card, Direct Display
+// ============================================
+
+interface FAQItem {
+  question: string;
+  answer: string;
+}
+
+interface FAQSectionProps {
+  faqs: FAQItem[];
+  title?: string;
+  subtitle?: string;
+}
+
+const FAQSection: React.FC<FAQSectionProps> = ({ 
+  faqs, 
+  title = "Frequently Asked Questions",
+  subtitle = "Find answers to common questions about this topic"
+}) => {
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  const toggleFAQ = (index: number) => {
+    setOpenIndex(openIndex === index ? null : index);
+  };
+
+  if (!faqs || faqs.length === 0) return null;
+
+  return (
+    <div className="mt-8 sm:mt-10 md:mt-12 border-t border-gray-200 pt-6 sm:pt-8 md:pt-10">
+      
+      <div className="text-center mb-6 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+          {title}
+        </h2>
+        <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
+          {subtitle}
+        </p>
+      </div>
+
+      <div className="max-w-3xl mx-auto space-y-3 sm:space-y-4">
+        {faqs.map((faq, index) => (
+          <div
+            key={index}
+            className="border-b border-gray-200 pb-3 sm:pb-4"
+          >
+            <button
+              onClick={() => toggleFAQ(index)}
+              className="w-full text-left flex items-center justify-between gap-4 py-2 hover:text-[#016ab7] transition-colors duration-200"
+            >
+              <span className="text-sm sm:text-base font-medium text-gray-900 flex-1">
+                {faq.question}
+              </span>
+              <span className="flex-shrink-0 ml-4">
+                {openIndex === index ? (
+                  <MinusIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#016ab7]" />
+                ) : (
+                  <PlusIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#016ab7]" />
+                )}
+              </span>
+            </button>
+
+            <div
+              className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                openIndex === index ? 'max-h-[1000px]' : 'max-h-0'
+              }`}
+            >
+              <div className="pt-2 pb-1">
+                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+                  {faq.answer}
+                </p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ============================================
+// BLOG DETAIL PAGE
+// ============================================
+
+const BlogDetailPage = () => {
+  const params = useParams();
+  const router = useRouter();
+  const slug = params?.slug as string || '';
+
+  const { useGetBlogBySlug, useGetBlogs } = useBlog();
+  const { useGetCourses } = useCourse();
+  const { data, isLoading, error } = useGetBlogBySlug(slug);
+  const blog = data?.data;
+
+  // Fetch related blogs
+  const { data: relatedBlogsData } = useGetBlogs({
+    category: blog?.category,
+    status: 'published',
+    limit: 10,
+  });
+
+  // Fetch suggested courses
+  const { data: coursesData } = useGetCourses({
+    status: 'active',
+    limit: 10,
+  });
+
+  const relatedBlogs = relatedBlogsData?.data?.filter(
+    (b) => b._id !== blog?._id
+  ) || [];
+
+  const suggestedCourses = coursesData?.data?.slice(0, 5) || [];
+
+  const [headings, setHeadings] = useState<{ id: string; text: string; level: number }[]>([]);
+  const [activeHeading, setActiveHeading] = useState<string>('');
+  const [processedContent, setProcessedContent] = useState<string>('');
+  const [readingTime, setReadingTime] = useState(1);
+  const [readingProgress, setReadingProgress] = useState(0);
+  const articleRef = useRef<HTMLElement>(null);
+
+  // Refs for sticky behavior
+  const leftSidebarRef = useRef<HTMLDivElement>(null);
+  const rightSidebarRef = useRef<HTMLDivElement>(null);
+  const leftContainerRef = useRef<HTMLDivElement>(null);
+  const rightContainerRef = useRef<HTMLDivElement>(null);
+  const [isLeftSticky, setIsLeftSticky] = useState(false);
+  const [isRightSticky, setIsRightSticky] = useState(false);
+  const [leftSidebarWidth, setLeftSidebarWidth] = useState(0);
+  const [rightSidebarWidth, setRightSidebarWidth] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Process content to add IDs to headings for TOC
+  useEffect(() => {
+    if (blog?.content) {
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = blog.content;
+      
+      const headingElements = tempDiv.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      const extractedHeadings: { id: string; text: string; level: number }[] = [];
+      
+      headingElements.forEach((el) => {
+        const text = el.textContent?.trim() || '';
+        if (text) {
+          const id = text
+            .toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-+|-+$/g, '');
+          
+          el.id = id;
+          
+          extractedHeadings.push({
+            id,
+            text,
+            level: parseInt(el.tagName.charAt(1)),
+          });
+        }
+      });
+      
+      setProcessedContent(tempDiv.innerHTML);
+
+      // Calculate reading time from the actual article text (225 words per minute)
+      const articleText = tempDiv.textContent?.trim() || '';
+      const wordCount = articleText ? articleText.split(/\s+/).filter(Boolean).length : 0;
+      setReadingTime(Math.max(1, Math.ceil(wordCount / 225)));
+      
+      // Only keep H2 headings for Table of Contents
+      const h2Headings = extractedHeadings.filter(h => h.level === 2);
+      setHeadings(h2Headings);
+    }
+  }, [blog?.content]);
+
+  // Track reading progress within the article content only
+  useEffect(() => {
+    const updateReadingProgress = () => {
+      const article = articleRef.current;
+      if (!article) return;
+
+      const navbarOffset = 85;
+      const articleTop = article.getBoundingClientRect().top + window.scrollY;
+      const articleHeight = article.offsetHeight;
+      const progressStart = articleTop - navbarOffset;
+      const progressEnd = articleTop + articleHeight - window.innerHeight;
+      const scrollableDistance = Math.max(progressEnd - progressStart, 1);
+      const progress = ((window.scrollY - progressStart) / scrollableDistance) * 100;
+
+      setReadingProgress(Math.min(100, Math.max(0, progress)));
+    };
+
+    updateReadingProgress();
+    window.addEventListener('scroll', updateReadingProgress, { passive: true });
+    window.addEventListener('resize', updateReadingProgress);
+
+    return () => {
+      window.removeEventListener('scroll', updateReadingProgress);
+      window.removeEventListener('resize', updateReadingProgress);
+    };
+  }, [processedContent, blog?.faq?.length]);
+
+  // Track active heading on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      const headingElements = document.querySelectorAll('.blog-content h2[id]');
+      let currentId = '';
+      
+      headingElements.forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= 120) {
+          currentId = el.id;
+        }
+      });
+      
+      if (currentId) {
+        setActiveHeading(currentId);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Check for mobile screen
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Calculate sidebar dimensions
+  useEffect(() => {
+    if (leftSidebarRef.current) {
+      setLeftSidebarWidth(leftSidebarRef.current.offsetWidth);
+    }
+    if (rightSidebarRef.current) {
+      setRightSidebarWidth(rightSidebarRef.current.offsetWidth);
+    }
+  }, [headings, relatedBlogs, suggestedCourses]);
+
+  // Handle sticky behavior for sidebars - Stable version
+  const handleSticky = useCallback(() => {
+    const navbarHeight = 85;
+    const scrollY = window.scrollY;
+    const windowHeight = window.innerHeight;
+
+    // Only apply sticky on desktop
+    if (isMobile) {
+      setIsLeftSticky(false);
+      setIsRightSticky(false);
+      return;
+    }
+
+    // Left sidebar sticky - stable calculation
+    if (leftContainerRef.current && leftSidebarRef.current) {
+      const containerRect = leftContainerRef.current.getBoundingClientRect();
+      const containerTop = containerRect.top + scrollY;
+      const sidebarHeight = leftSidebarRef.current.offsetHeight;
+      const containerHeight = containerRect.height;
+
+      const scrollPosition = scrollY + navbarHeight;
+      const shouldStick = 
+        scrollPosition > containerTop && 
+        scrollPosition < containerTop + containerHeight - sidebarHeight &&
+        containerHeight > sidebarHeight + 100;
+
+      setIsLeftSticky(shouldStick);
+    }
+
+    // Right sidebar sticky - stable calculation
+    if (rightContainerRef.current && rightSidebarRef.current) {
+      const containerRect = rightContainerRef.current.getBoundingClientRect();
+      const containerTop = containerRect.top + scrollY;
+      const sidebarHeight = rightSidebarRef.current.offsetHeight;
+      const containerHeight = containerRect.height;
+
+      const scrollPosition = scrollY + navbarHeight;
+      const shouldStick = 
+        scrollPosition > containerTop && 
+        scrollPosition < containerTop + containerHeight - sidebarHeight &&
+        containerHeight > sidebarHeight + 100;
+
+      setIsRightSticky(shouldStick);
+    }
+  }, [isMobile]);
+
+  // Add scroll listener with cleanup
+  useEffect(() => {
+    handleSticky();
+
+    let ticking = false;
+    const scrollHandler = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          handleSticky();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', scrollHandler, { passive: true });
+    window.addEventListener('resize', handleSticky, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', scrollHandler);
+      window.removeEventListener('resize', handleSticky);
+    };
+  }, [handleSticky, headings, relatedBlogs, suggestedCourses, isMobile]);
+
+  // Scroll to heading
+  const scrollToHeading = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      const offset = 80;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
+      
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+      
+      setActiveHeading(id);
+    }
+  };
+
+  // ============================================
+  // DYNAMIC FAQ HANDLING - FROM BACKEND
+  // ============================================
+  
+  const getFAQs = (): FAQItem[] => {
+    if (blog?.faq && Array.isArray(blog.faq) && blog.faq.length > 0) {
+      return blog.faq;
+    }
+    return [];
+  };
+
+  const faqs = getFAQs();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="container mx-auto px-4 max-w-7xl">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-3">
+              <div className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
+                <div className="h-6 bg-gray-200 rounded w-1/2 mb-3"></div>
+                <div className="space-y-2">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="h-4 bg-gray-200 rounded w-full"></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="lg:col-span-6">
+              <div className="bg-white rounded-lg shadow-sm p-6 animate-pulse space-y-4">
+                <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                <div className="h-64 bg-gray-200 rounded"></div>
+                <div className="space-y-3">
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              </div>
+            </div>
+            <div className="lg:col-span-3">
+              <div className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
+                <div className="h-6 bg-gray-200 rounded w-1/2 mb-3"></div>
+                <div className="space-y-3">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="h-12 bg-gray-200 rounded w-full"></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !blog) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-6xl mb-4">😕</div>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-2">Article not found</h2>
+          <p className="text-gray-600 mb-6">The article you're looking for doesn't exist or has been removed.</p>
+          <Link
+            href="/blog"
+            className="inline-flex items-center px-6 py-3 bg-[#016ab7] text-white rounded-lg hover:bg-[#0158a0] hover:shadow-lg hover:shadow-[#016ab7]/25 transition-all"
+          >
+            <ArrowLeftIcon className="h-5 w-5 mr-2" />
+            Back to Blog
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Sanitize the processed content with proper configuration
+  const sanitizedContent = DOMPurify.sanitize(processedContent || blog.content || '', {
+    ADD_TAGS: ['style', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
+    ADD_ATTR: ['id', 'style', 'class', 'target', 'rel', 'colspan', 'rowspan'],
+    FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'input'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onchange'],
+  });
+
+  return (
+    <div className="min-h-screen bg-white w-full">
+      <div
+        className="fixed left-0 top-0 z-[9999] h-[4px] w-full origin-left bg-[#016ab7] pointer-events-none"
+        style={{ transform: `scaleX(${readingProgress / 100})` }}
+        role="progressbar"
+        aria-label="Article reading progress"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(readingProgress)}
+      />
+      {/* Content Section - Responsive */}
+      <div className="w-full px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16 py-4 sm:py-6 md:py-8">
+        <div className="w-full max-w-[1600px] mx-auto">
+          {/* Breadcrumb - Responsive */}
+          <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6 overflow-x-auto pb-2">
+            <Link href="/" className="hover:text-[#016ab7] transition-colors whitespace-nowrap">
+              Home
+            </Link>
+            <ChevronRightIcon className="h-3 w-3 flex-shrink-0" />
+            <Link href="/blog" className="hover:text-[#016ab7] transition-colors whitespace-nowrap">
+              Blog
+            </Link>
+            {blog.category && (
+              <>
+                <ChevronRightIcon className="h-3 w-3 flex-shrink-0" />
+                <Link 
+                  href={`/blog/${blog.category.toLowerCase()}`}
+                  className="hover:text-[#016ab7] transition-colors whitespace-nowrap"
+                >
+                  {blog.category}
+                </Link>
+              </>
+            )}
+            <ChevronRightIcon className="h-3 w-3 flex-shrink-0" />
+            <span className="text-gray-700 truncate max-w-[100px] sm:max-w-[200px] md:max-w-[300px]">{blog.title}</span>
+          </div>
+
+          {/* Main Grid Layout - Responsive with stable sidebars */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 xl:gap-8 relative">
+            {/* Left Sidebar - Table of Contents - SHOW ONLY H2 */}
+            <div className="lg:col-span-3 xl:col-span-2 order-2 lg:order-1" ref={leftContainerRef}>
+              {headings.length > 0 && (
+                <div 
+                  ref={leftSidebarRef}
+                  className={`${isLeftSticky ? 'lg:fixed lg:top-[85px]' : ''}`}
+                  style={{
+                    width: isLeftSticky ? `${leftSidebarWidth}px` : 'auto',
+                    maxWidth: isLeftSticky ? '280px' : '100%',
+                    transition: 'none',
+                  }}
+                >
+                  <div className="p-3 sm:p-4 xl:p-5 max-h-[70vh] overflow-y-auto">
+                    <h3 className="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wider mb-2 sm:mb-3 sticky top-0 bg-white z-10 py-1">
+                      Table of Contents
+                    </h3>
+                    <nav className="space-y-0.5">
+                      {headings
+                        .filter(h => h.level === 2)
+                        .map((heading, index) => {
+                          const isActive = activeHeading === heading.id;
+                          
+                          return (
+                            <button
+                              key={index}
+                              onClick={() => scrollToHeading(heading.id)}
+                              className={`block w-full text-left px-2 py-1.5 rounded transition-all text-xs sm:text-sm font-medium ${
+                                isActive
+                                  ? 'text-[#016ab7] border-l-2 border-[#016ab7]'
+                                  : 'text-gray-600 hover:text-[#016ab7]'
+                              }`}
+                            >
+                              <span className="line-clamp-2">{heading.text}</span>
+                            </button>
+                          );
+                        })}
+                    </nav>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Main Content - No Card, Direct Display */}
+            <div className="lg:col-span-6 xl:col-span-7 order-1 lg:order-2">
+              <article ref={articleRef}>
+                <div className="p-0">
+                  {/* Header - Responsive */}
+                  <header className="mb-6 sm:mb-8 xl:mb-10">
+                    <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
+                      {blog.category && (
+                        <Link
+                          href={`/blog/${blog.category.toLowerCase()}`}
+                          className="inline-block bg-[#016ab7]/10 text-[#016ab7] text-xs sm:text-sm font-medium px-2.5 sm:px-3 py-1 rounded-full hover:bg-[#016ab7]/20 transition-colors"
+                        >
+                          {blog.category}
+                        </Link>
+                      )}
+                    </div>
+
+                    <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 leading-tight">
+                      {blog.title}
+                    </h1>
+
+                    <p className="text-sm sm:text-base lg:text-lg text-gray-600 mb-4 sm:mb-5 leading-relaxed">
+                      {blog.description}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 md:gap-6 text-xs sm:text-sm text-gray-500">
+                      <span className="flex items-center">
+                        <CalendarIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                        {blog.postingDate
+                          ? format(new Date(blog.postingDate), 'MMMM d, yyyy')
+                          : format(new Date(blog.createdAt), 'MMMM d, yyyy')}
+                      </span>
+                      <span className="flex items-center">
+                        <UserIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                        {blog.postedBy || 'Admin'}
+                      </span>
+                      <span className="flex items-center">
+                        <ClockIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                        {readingTime} min read
+                      </span>
+                      {blog.keyword && blog.keyword.length > 0 && (
+                        <span className="flex items-center gap-1.5">
+                          <TagIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                          {blog.keyword.slice(0, 3).map((tag: string) => (
+                            <span
+                              key={tag}
+                              className="bg-gray-100 text-gray-600 text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </span>
+                      )}
+                    </div>
+                  </header>
+
+                  {/* Dynamic HTML Content - Isolated from external CSS */}
+                  <div 
+                    className="blog-content-container"
+                    dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+                  />
+
+                  {/* DYNAMIC FAQ SECTION - Renders directly in content flow */}
+                  {faqs.length > 0 && (
+                    <FAQSection 
+                      faqs={faqs}
+                      title="Frequently Asked Questions"
+                      subtitle={`Got questions about ${blog.title}? Find answers to the most common ones below.`}
+                    />
+                  )}
+
+                  {faqs.length === 0 && (
+                    <div className="mt-8 sm:mt-10 md:mt-12 border-t border-gray-200 pt-6 sm:pt-8 md:pt-10 text-center">
+                      <p className="text-sm text-gray-500">
+                        No FAQs available for this article yet.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </article>
+
+              {/* Back to Blog - Responsive */}
+              <div className="mt-4 sm:mt-6 text-center">
+                <Link
+                  href="/blog"
+                  className="inline-flex items-center text-[#016ab7] hover:text-[#6cb84d] font-medium transition-colors text-sm sm:text-base"
+                >
+                  <ArrowLeftIcon className="h-4 w-4 mr-1.5 sm:mr-2" />
+                  Back to All Articles
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Sidebar - No Cards */}
+            <div className="lg:col-span-3 xl:col-span-3 order-3" ref={rightContainerRef}>
+              <div 
+                ref={rightSidebarRef}
+                className={`${isRightSticky ? 'lg:fixed lg:top-[85px]' : ''}`}
+                style={{
+                  width: isRightSticky ? `${rightSidebarWidth}px` : 'auto',
+                  maxWidth: isRightSticky ? '380px' : '100%',
+                  transition: 'none',
+                }}
+              >
+                <div className="space-y-4 sm:space-y-6 max-h-[70vh] overflow-y-auto pr-1">
+                  {/* Suggested Blogs - No Card */}
+                  {relatedBlogs.length > 0 && (
+                    <div className="p-3 sm:p-4">
+                      <div className="flex items-center gap-2 mb-2 sm:mb-3 sticky top-0 bg-white z-10 py-1">
+                        <BookOpenIcon className="h-4 w-4 sm:h-5 sm:w-5 text-[#016ab7]" />
+                        <h3 className="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wider">
+                          You Might Also Like
+                        </h3>
+                      </div>
+                      <div className="space-y-2 sm:space-y-3">
+                        {relatedBlogs.slice(0, 3).map((relatedBlog) => (
+                          <Link
+                            key={relatedBlog._id}
+                            href={`/blog/${relatedBlog.category?.toLowerCase() || 'uncategorized'}/${relatedBlog.slug}`}
+                            className="block group"
+                          >
+                            <div className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 hover:bg-gray-50 transition-colors -mx-1.5 sm:-mx-2">
+                              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                                {relatedBlog.banner?.url ? (
+                                  <img
+                                    src={relatedBlog.banner.url}
+                                    alt={relatedBlog.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-[#016ab7]/10">
+                                    <BookOpenIcon className="h-6 w-6 sm:h-7 sm:w-7 text-[#016ab7]" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-xs sm:text-sm text-gray-700 group-hover:text-[#016ab7] transition-colors line-clamp-2 font-medium">
+                                  {relatedBlog.title}
+                                </h4>
+                                <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
+                                  <span className="text-[10px] sm:text-xs text-gray-400 flex items-center">
+                                    <CalendarIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5" />
+                                    {relatedBlog.postingDate
+                                      ? format(new Date(relatedBlog.postingDate), 'MMM d, yyyy')
+                                      : format(new Date(relatedBlog.createdAt), 'MMM d, yyyy')}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                      {relatedBlogs.length > 3 && (
+                        <Link
+                          href={`/blog/${blog.category?.toLowerCase()}`}
+                          className="block text-center text-xs sm:text-sm text-[#016ab7] hover:text-[#6cb84d] font-medium mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-gray-100"
+                        >
+                          View all related articles →
+                        </Link>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Suggested Courses - No Card */}
+                  {suggestedCourses.length > 0 && (
+                    <div className="p-3 sm:p-4">
+                      <h3 className="text-xs sm:text-sm font-semibold text-gray-700 uppercase tracking-wider mb-2 sm:mb-3 sticky top-0 bg-white z-10 py-1">
+                        Recommended Courses
+                      </h3>
+                      <div className="space-y-2 sm:space-y-3">
+                        {suggestedCourses.slice(0, 3).map((suggestedCourse) => (
+                          <Link
+                            key={suggestedCourse._id}
+                            href={`/course/${suggestedCourse.slug}`}
+                            className="block group"
+                          >
+                            <div className="p-2 sm:p-3 hover:bg-gray-50 transition-colors -mx-1.5 sm:-mx-2">
+                              <div className="flex-1 min-w-0">
+                                <h4 className="text-xs sm:text-sm font-medium text-gray-900 group-hover:text-[#016ab7] transition-colors line-clamp-1">
+                                  {suggestedCourse.title}
+                                </h4>
+                                <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 line-clamp-1">{suggestedCourse.category}</p>
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                      <Link
+                        href="/course"
+                        className="mt-2 sm:mt-3 w-full px-3 sm:px-4 py-1.5 sm:py-2 bg-[#016ab7]/10 hover:bg-[#016ab7]/20 text-[#016ab7] rounded-lg text-xs sm:text-sm font-medium transition-colors flex items-center justify-center gap-1.5 sm:gap-2"
+                      >
+                        View All Courses
+                        <ChevronRightIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Global styles - Isolated to blog content only */}
+      <style jsx global>{`
+        /* Target only the blog content container */
+        .blog-content-container {
+          all: initial;
+          display: block;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+          color: #1a202c;
+          line-height: 1.8;
+          font-size: 16px;
+        }
+
+        .blog-content-container * {
+          all: revert;
+          font-family: inherit;
+        }
+
+        /* Heading styles */
+        .blog-content-container h1 {
+          font-size: 2em !important;
+          font-weight: 700 !important;
+          margin-top: 1.5em !important;
+          margin-bottom: 0.75em !important;
+          line-height: 1.3 !important;
+          color: #1a202c !important;
+        }
+
+        .blog-content-container h2 {
+          font-size: 1.5em !important;
+          font-weight: 700 !important;
+          margin-top: 1.5em !important;
+          margin-bottom: 0.75em !important;
+          color: #016ab7 !important;
+          line-height: 1.3 !important;
+          scroll-margin-top: 80px !important;
+        }
+
+        .blog-content-container h3 {
+          font-size: 1.25em !important;
+          font-weight: 600 !important;
+          margin-top: 1.2em !important;
+          margin-bottom: 0.5em !important;
+          line-height: 1.4 !important;
+          color: #2d3748 !important;
+        }
+
+        .blog-content-container h4 {
+          font-size: 1.1em !important;
+          font-weight: 600 !important;
+          margin-top: 1em !important;
+          margin-bottom: 0.5em !important;
+          line-height: 1.4 !important;
+          color: #2d3748 !important;
+        }
+
+        .blog-content-container h5,
+        .blog-content-container h6 {
+          font-size: 1em !important;
+          font-weight: 600 !important;
+          margin-top: 0.8em !important;
+          margin-bottom: 0.5em !important;
+          line-height: 1.4 !important;
+          color: #4a5568 !important;
+        }
+
+        /* Paragraph styles */
+        .blog-content-container p {
+          margin-bottom: 1.2em !important;
+          line-height: 1.8 !important;
+          color: #374151 !important;
+          font-size: 1em !important;
+        }
+
+        /* List styles */
+        .blog-content-container ul,
+        .blog-content-container ol {
+          margin: 0.75em 0 1.2em 0 !important;
+          padding-left: 1.5em !important;
+        }
+
+        .blog-content-container li {
+          margin-bottom: 0.35em !important;
+          line-height: 1.7 !important;
+          color: #374151 !important;
+        }
+
+        .blog-content-container ul li {
+          list-style-type: disc !important;
+        }
+
+        .blog-content-container ol li {
+          list-style-type: decimal !important;
+        }
+
+        /* Link styles */
+        .blog-content-container a {
+          color: #016ab7 !important;
+          text-decoration: underline !important;
+          transition: color 0.2s ease !important;
+        }
+
+        .blog-content-container a:hover {
+          color: #6cb84d !important;
+        }
+
+        /* Blockquote styles */
+        .blog-content-container blockquote {
+          border-left: 4px solid #016ab7 !important;
+          padding-left: 1.2em !important;
+          margin: 1.2em 0 !important;
+          font-style: italic !important;
+          color: #4b5563 !important;
+          background: #f8fafc !important;
+          padding: 1em 1.2em !important;
+          border-radius: 0.5rem !important;
+        }
+
+        /* Table styles */
+        .blog-content-container table {
+          width: 100% !important;
+          border-collapse: collapse !important;
+          margin: 1.5em 0 !important;
+          font-size: 0.95em !important;
+          overflow-x: auto !important;
+          display: block !important;
+        }
+
+        .blog-content-container table thead {
+          background: #f7fafc !important;
+        }
+
+        .blog-content-container table th {
+          padding: 12px 16px !important;
+          text-align: left !important;
+          font-weight: 600 !important;
+          color: #1a202c !important;
+          border-bottom: 2px solid #e2e8f0 !important;
+          background: #f7fafc !important;
+        }
+
+        .blog-content-container table td {
+          padding: 12px 16px !important;
+          border-bottom: 1px solid #e2e8f0 !important;
+          color: #374151 !important;
+        }
+
+        .blog-content-container table tr:hover {
+          background: #f8fafc !important;
+        }
+
+        .blog-content-container table tr:nth-child(even) {
+          background: #fafafa !important;
+        }
+
+        /* Image styles */
+        .blog-content-container img {
+          max-width: 100% !important;
+          height: auto !important;
+          border-radius: 0.5rem !important;
+          margin: 1.5em 0 !important;
+        }
+
+        /* Horizontal rule */
+        .blog-content-container hr {
+          margin: 2em 0 !important;
+          border: 0 !important;
+          border-top: 1px solid #e5e7eb !important;
+        }
+
+        /* Strong/Emphasis */
+        .blog-content-container strong {
+          font-weight: 700 !important;
+          color: #1a202c !important;
+        }
+
+        .blog-content-container em {
+          font-style: italic !important;
+        }
+
+        /* Code blocks */
+        .blog-content-container code {
+          background: #f7fafc !important;
+          padding: 0.2em 0.4em !important;
+          border-radius: 4px !important;
+          font-family: 'Courier New', monospace !important;
+          font-size: 0.9em !important;
+          color: #016ab7 !important;
+        }
+
+        .blog-content-container pre {
+          background: #2d3748 !important;
+          color: #e2e8f0 !important;
+          padding: 1em !important;
+          border-radius: 0.5rem !important;
+          overflow-x: auto !important;
+          margin: 1.2em 0 !important;
+        }
+
+        .blog-content-container pre code {
+          background: transparent !important;
+          color: inherit !important;
+          padding: 0 !important;
+        }
+
+        /* Scrollable sidebars */
+        .max-h-\\[70vh\\] {
+          max-height: 70vh;
+        }
+        
+        .max-h-\\[70vh\\]::-webkit-scrollbar {
+          width: 4px;
+        }
+        
+        .max-h-\\[70vh\\]::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+        
+        .max-h-\\[70vh\\]::-webkit-scrollbar-thumb {
+          background: #c1c1c1;
+          border-radius: 10px;
+        }
+        
+        .max-h-\\[70vh\\]::-webkit-scrollbar-thumb:hover {
+          background: #a8a8a8;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+          .blog-content-container h1 {
+            font-size: 1.5em !important;
+          }
+          .blog-content-container h2 {
+            font-size: 1.3em !important;
+          }
+          .blog-content-container h3 {
+            font-size: 1.1em !important;
+          }
+          .blog-content-container p {
+            font-size: 0.95em !important;
+          }
+          .blog-content-container table {
+            font-size: 0.8em !important;
+          }
+          .blog-content-container table th,
+          .blog-content-container table td {
+            padding: 8px 10px !important;
+          }
+        }
+
+        /* Fix for sticky sidebars on mobile */
+        @media (max-width: 1023px) {
+          .lg\\:fixed {
+            position: relative !important;
+            top: 0 !important;
+          }
+        }
+
+        /* Ensure all headings have scroll margin */
+        .blog-content-container h1,
+        .blog-content-container h2,
+        .blog-content-container h3,
+        .blog-content-container h4,
+        .blog-content-container h5,
+        .blog-content-container h6 {
+          scroll-margin-top: 80px !important;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default BlogDetailPage;

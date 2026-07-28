@@ -1,0 +1,406 @@
+"use client";
+import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
+import NextImage from "next/image";
+import {
+  SparklesIcon, UsersIcon, AcademicCapIcon, BookOpenIcon, TrophyIcon,
+  UserIcon, StarIcon, CheckCircleIcon, ArrowRightIcon, RocketLaunchIcon,
+  CpuChipIcon, Square3Stack3DIcon, CloudArrowUpIcon, ArrowPathIcon,
+} from "@heroicons/react/24/outline";
+
+const aboutData = {
+  stats: [
+    { id: 1, icon: UsersIcon,       label: "Students Impacted", value: "50,000+" },
+    { id: 2, icon: AcademicCapIcon, label: "Expert Educators",  value: "200+"    },
+    { id: 3, icon: BookOpenIcon,    label: "Courses Offered",   value: "100+"    },
+    { id: 4, icon: TrophyIcon,      label: "Success Rate",      value: "95%"     },
+  ],
+  journey: [
+    { year: "2020", title: "The Beginning",   description: "Started with a vision to make quality education accessible to all"          },
+    { year: "2021", title: "First Milestone", description: "Reached 10,000 students and launched our first 20 courses"                  },
+    { year: "2022", title: "Expansion",       description: "Expanded to 50+ courses and introduced personalized learning paths"         },
+    { year: "2023", title: "Innovation",      description: "Launched AI-powered learning tools and interactive resources"                },
+    { year: "2024", title: "Global Reach",    description: "Reached 50,000+ students across India and beyond"                          },
+  ],
+  team: [
+    { id: 1, name: "Saurabh Kumar",   image: "https://sn.shikshanation.com/saurabh-kumar.webp",           role: "Founder & CEO",               bio: "Gold Medalist in Mechanical Engineering, PhD from Germany, and IIM alumnus with 24+ years of academic leadership. Mentored 1 lakh+ students including IITians, NEET toppers, and board rankers."    },
+    { id: 2, name: "Devendra Gaur",   image: "https://sn.shikshanation.com/devendra.webp",                 role: "Chief Strategy Officer (CSO)", bio: "Seasoned leader with 30+ years in Business strategies for EdTech, coaching, and preschool chains. Expert in public sector engagement and strategic project management."                          },
+    { id: 3, name: "Gaurav Mittal",   image: "https://sn.shikshanation.com/Gaurav-Mittal2.webp",           role: "Chief Technology Officer (CTO)",bio: "MBA from Symbiosis with backgrounds in IT and Commerce. Led tech at HCL Technologies and EXL. Driving scalable, personalized AI-powered education platform."                                  },
+    { id: 4, name: "Ameet Vohra",     image: "https://sn.shikshanation.com/ameet.webp",                    role: "Chief Sales Officer (CSO)",    bio: "23+ years of experience across EdTech, Test Prep, K-12, and Higher Education. Expert in building high-performance sales teams and scaling revenue operations."                                 },
+    { id: 5, name: "Ashutosh Shukla", image: "https://sn.shikshanation.com/about-us/ashutosh.webp",        role: "Chief Finance Officer (CFO)",  bio: "17+ years in Auditing, Taxation, and Compliance. Expertise in Education, Real Estate, NBFC, and Automobile sectors. Driving financial planning and growth strategy."                          },
+    { id: 6, name: "Anurag Mishra",   image: "https://sn.shikshanation.com/anurag2.webp",                  role: "VP Academics JEE",            bio: "IIT Roorkee alumnus and renowned Physics author with 25+ years mentoring JEE/NEET aspirants. Leading AI-powered strategies for joyful and effective learning."                                 },
+    { id: 7, name: "Dr. NK Sharma",   image: "https://sn.shikshanation.com/NK2.webp",                      role: "VP Academics NEET",           bio: "Medical graduate from LLRM Medical College with 20+ years in NEET coaching. Author of Master Class in Biology and Pearson Guide for AIPMT. Driving student-centric science education."         },
+  ],
+  features: [
+    { id: 1, icon: CpuChipIcon,        title: "AI-Powered Learning",  description: "Personalized recommendations and adaptive assessments" },
+    { id: 2, icon: Square3Stack3DIcon, title: "Interactive Content",  description: "Engaging videos, quizzes, and hands-on exercises"      },
+    { id: 3, icon: CloudArrowUpIcon,   title: "Cloud-Based Platform", description: "Access your learning from anywhere, anytime"           },
+    { id: 4, icon: ArrowPathIcon,      title: "Real-Time Progress",   description: "Track your growth with detailed analytics"             },
+  ],
+  testimonials: [
+    { id: 1, name: "Ananya Singh",   role: "Student",          quote: "This platform transformed my learning experience completely."             },
+    { id: 2, name: "Vikram Mehta",   role: "Parent",           quote: "My daughter's confidence and grades improved significantly."             },
+    { id: 3, name: "Dr. Neha Gupta", role: "School Principal", quote: "An exceptional resource for modern education."                           },
+    { id: 4, name: "Rahul Verma",    role: "Student",          quote: "The interactive content made learning so much more engaging."            },
+    { id: 5, name: "Priya Singh",    role: "Teacher",          quote: "I recommend this platform to all my students for extra practice."        },
+    { id: 6, name: "Amit Kumar",     role: "Parent",           quote: "My child's academic performance has improved dramatically."              },
+  ],
+};
+
+// ── Reusable member card — no shading, plain white ──
+const MemberCard = ({ member }: { member: typeof aboutData.team[0] }) => (
+  <div className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+    <div className="p-6 text-center">
+      <div className="w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden border-4 border-white ring-2 ring-[#016ab7]/15 group-hover:ring-[#016ab7]/40 transition-all">
+        <NextImage
+          src={member.image}
+          alt={member.name}
+          width={128}
+          height={128}
+          className="w-full h-full rounded-full object-cover group-hover:scale-110 transition-transform duration-300"
+        />
+      </div>
+      <h3 className="text-lg font-semibold text-gray-900">{member.name}</h3>
+      <p className="text-sm text-[#016ab7] font-medium mt-0.5">{member.role}</p>
+      <p className="text-sm text-gray-500 mt-2 line-clamp-4">{member.bio}</p>
+    </div>
+  </div>
+);
+
+const AboutPage = () => {
+  const testimonialsRef = useRef<HTMLDivElement>(null);
+  const journeyRef      = useRef<HTMLDivElement>(null);
+  const [formData, setFormData]       = useState({ name: "", email: "", phone: "", message: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<null | "success" | "error">(null);
+
+  // Auto-scroll testimonials
+  useEffect(() => {
+    const el = testimonialsRef.current;
+    if (!el) return;
+    let pos = 0, id: number;
+    const run = () => {
+      pos += 0.8;
+      if (pos >= el.scrollWidth / 2) pos = 0;
+      el.scrollLeft = pos;
+      id = requestAnimationFrame(run);
+    };
+    id = requestAnimationFrame(run);
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  // Auto-scroll journey
+  useEffect(() => {
+    const el = journeyRef.current;
+    if (!el) return;
+    let pos = 0, id: number;
+    const run = () => {
+      pos += 0.6;
+      if (pos >= el.scrollWidth / 2) pos = 0;
+      el.scrollLeft = pos;
+      id = requestAnimationFrame(run);
+    };
+    id = requestAnimationFrame(run);
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitStatus(null);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setSubmitStatus("success");
+      setFormData({ name: "", email: "", phone: "", message: "" });
+    } catch {
+      setSubmitStatus("error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const ceo  = aboutData.team[0];
+  const rest = aboutData.team.slice(1);
+
+  return (
+    <div className="min-h-screen bg-white">
+
+      {/* ── HERO ── */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#016ab7] via-[#0158a0] to-[#013b6b]">
+        <div className="absolute inset-0">
+          <div className="absolute top-0 -left-4 w-96 h-96 bg-[#016ab7]/20 rounded-full mix-blend-screen filter blur-3xl animate-blob" />
+          <div className="absolute top-0 -right-4 w-96 h-96 bg-[#0158a0]/15 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-2000" />
+          <div className="absolute -bottom-8 left-20 w-96 h-96 bg-[#016ab7]/10 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-4000" />
+        </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm px-4 py-2 rounded-full mb-5 border border-white/20">
+                <SparklesIcon className="h-5 w-5 text-[#6cb84d]" />
+                <span className="text-sm font-medium text-white">About Our Platform</span>
+              </div>
+              <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mb-4">
+                We&apos;re Building the{" "}
+                <span style={{ color: "var(--color-brand-end)" }}>Future of Education</span>
+              </h1>
+              <p className="text-base text-white/90 leading-relaxed mb-6">
+                A revolutionary platform that combines technology with expert-led learning to make education accessible, engaging, and effective for everyone.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Link
+                  href="/course"
+                  className="px-8 py-3 bg-white text-[#016ab7] font-semibold rounded-xl transition-all shadow-lg shadow-black/20 hover:shadow-black/30 hover:shadow-xl hover:scale-105 inline-flex items-center gap-2"
+                >
+                  Get Started <ArrowRightIcon className="h-5 w-5" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── STATS BAR ── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-10">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 px-6 py-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-gray-100">
+            {aboutData.stats.map((stat) => (
+              <div key={stat.id} className="flex items-center gap-3 px-4 py-2 first:pl-0 last:pr-0">
+                <div className="flex items-center justify-center w-9 h-9 bg-gradient-to-br from-[#016ab7] to-[#0158a0] rounded-xl flex-shrink-0 shadow shadow-[#016ab7]/20">
+                  <stat.icon className="h-4 w-4 text-white" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-gray-900 leading-tight">{stat.value}</div>
+                  <div className="text-xs text-gray-500 leading-tight">{stat.label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── JOURNEY ── */}
+      <div className="py-20 bg-white overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <span className="text-sm font-semibold text-[#016ab7] uppercase tracking-wider">Our Journey</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">From Vision to Reality</h2>
+            <p className="text-gray-600 mt-4 max-w-2xl mx-auto">Every milestone brings us closer to our goal of transforming education</p>
+          </div>
+        </div>
+        <div ref={journeyRef} className="overflow-x-auto pb-6 cursor-grab active:cursor-grabbing" style={{ scrollbarWidth: "none" }}>
+          <div className="flex gap-6 w-max px-6 items-center">
+            {[...aboutData.journey, ...aboutData.journey].map((item, index) => (
+              <React.Fragment key={index}>
+                <div className="relative flex-shrink-0 w-72">
+                  <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 hover:shadow-md hover:border-[#016ab7]/20 transition-all">
+                    <div className="text-2xl font-bold text-[#016ab7] mb-2">{item.year}</div>
+                    <h3 className="text-lg font-semibold text-gray-900">{item.title}</h3>
+                    <p className="text-gray-500 text-sm mt-2">{item.description}</p>
+                  </div>
+                </div>
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-gradient-to-br from-[#016ab7] to-[#0158a0] rounded-full flex items-center justify-center">
+                    <div className="w-3 h-3 bg-white rounded-full" />
+                  </div>
+                </div>
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── WHY CHOOSE US ── */}
+      <div className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-center mb-12">
+              <span className="text-sm font-semibold text-[#016ab7] uppercase tracking-wider">Why Choose Us</span>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2 mb-6">Built for the Modern Learner</h2>
+              <p className="text-gray-600 max-w-2xl mx-auto">We combine cutting-edge technology with expert knowledge to create an unparalleled learning experience.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {aboutData.features.map((feature) => (
+                <div key={feature.id} className="flex items-start gap-4 bg-white rounded-2xl p-6 hover:shadow-md transition-all border border-gray-100">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-[#016ab7] to-[#0158a0] rounded-xl flex items-center justify-center shadow shadow-[#016ab7]/15">
+                    <feature.icon className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-gray-900 text-lg">{feature.title}</h3>
+                    <p className="text-gray-500 text-sm mt-1">{feature.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── TEAM ── no shading, CEO on top centered ── */}
+      <div className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <span className="text-sm font-semibold text-[#016ab7] uppercase tracking-wider">Our Leadership</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">Meet Our Management Team</h2>
+            <p className="text-gray-500 mt-4 max-w-3xl mx-auto">The minds behind Shiksha Nation - leading with vision, passion, and purpose.</p>
+          </div>
+
+          {/* CEO — centered on top */}
+          <div className="flex justify-center mb-6">
+            <div className="w-full sm:w-80">
+              <MemberCard member={ceo} />
+            </div>
+          </div>
+
+          {/* Rest — 3 col grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {rest.map((member) => (
+              <MemberCard key={member.id} member={member} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── TESTIMONIALS ── */}
+      <div className="py-20 bg-gray-50 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <span className="text-sm font-semibold text-[#016ab7] uppercase tracking-wider">Testimonials</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mt-2">What Our Community Says</h2>
+          </div>
+        </div>
+        <div ref={testimonialsRef} className="overflow-x-auto cursor-grab" style={{ scrollbarWidth: "none" }}>
+          <div className="flex gap-6 w-max px-6">
+            {[...aboutData.testimonials, ...aboutData.testimonials].map((t, index) => (
+              <div
+                key={`${t.id}-${index}`}
+                className="w-[320px] flex-shrink-0 bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-md hover:border-[#016ab7]/20 transition-all"
+              >
+                <div className="flex gap-1 mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <StarIcon key={i} className="h-4 w-4 text-yellow-400 fill-current" />
+                  ))}
+                </div>
+                <p className="text-gray-600 leading-relaxed text-sm mb-4">&ldquo;{t.quote}&rdquo;</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-[#016ab7] to-[#0158a0] rounded-full flex items-center justify-center flex-shrink-0">
+                    <UserIcon className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900 text-sm">{t.name}</p>
+                    <p className="text-xs text-gray-400">{t.role}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── CTA + FORM ── */}
+      <div className="relative overflow-hidden py-20 bg-gradient-to-br from-[#016ab7] via-[#0158a0] to-[#013b6b]">
+        <div className="absolute inset-0">
+          <div className="absolute top-0 -left-4 w-96 h-96 bg-[#016ab7]/20 rounded-full mix-blend-screen filter blur-3xl animate-blob" />
+          <div className="absolute bottom-0 -right-4 w-96 h-96 bg-[#0158a0]/15 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-2000" />
+        </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm px-4 py-2 rounded-full mb-6 border border-white/20">
+                <RocketLaunchIcon className="h-5 w-5 text-[#6cb84d]" />
+                <span className="text-sm font-medium text-white">Get In Touch</span>
+              </div>
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+                Ready to Transform Your{" "}
+                <span style={{ color: "var(--color-brand-end)" }}>Learning Journey?</span>
+              </h2>
+              <p className="text-lg text-white/90 mb-8">
+                Join thousands of students who have already started their path to success. Fill out the form and our team will get back to you within 24 hours.
+              </p>
+              <div className="space-y-3">
+                {["Free consultation with our experts", "Personalized learning path recommendations", "Access to exclusive resources and webinars"].map((point) => (
+                  <div key={point} className="flex items-center gap-3 text-white/90">
+                    <CheckCircleIcon className="h-5 w-5 text-[#6cb84d] flex-shrink-0" />
+                    <span>{point}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Form */}
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 md:p-8 border border-white/20 shadow-2xl">
+              <h3 className="text-xl font-bold text-white mb-6">Talk to Us</h3>
+              {submitStatus === "success" ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircleIcon className="h-8 w-8 text-green-400" />
+                  </div>
+                  <h4 className="text-xl font-semibold text-white mb-2">Thank You!</h4>
+                  <p className="text-white/80">We&apos;ll get back to you within 24 hours.</p>
+                  <button onClick={() => setSubmitStatus(null)} className="mt-4 text-[#6cb84d] hover:text-[#5da83d] transition-colors">
+                    Send another message
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  {[
+                    { id: "name",  label: "Full Name *",      type: "text",  placeholder: "Enter your full name",    required: true  },
+                    { id: "email", label: "Email Address *",  type: "email", placeholder: "Enter your email",        required: true  },
+                    { id: "phone", label: "Phone Number",     type: "tel",   placeholder: "Enter your phone number", required: false },
+                  ].map((field) => (
+                    <div key={field.id}>
+                      <label htmlFor={field.id} className="block text-sm font-medium text-white/90 mb-1">{field.label}</label>
+                      <input
+                        type={field.type} id={field.id} name={field.id}
+                        value={formData[field.id as keyof typeof formData]}
+                        onChange={handleInputChange}
+                        required={field.required}
+                        placeholder={field.placeholder}
+                        className="w-full px-4 py-3 bg-white/15 border border-white/20 rounded-lg text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-[#6cb84d] focus:border-transparent transition-all"
+                      />
+                    </div>
+                  ))}
+                  {submitStatus === "error" && (
+                    <div className="bg-red-500/20 border border-red-400/30 rounded-lg p-3 text-red-300 text-sm">
+                      Something went wrong. Please try again.
+                    </div>
+                  )}
+                  <button
+                    type="submit" disabled={isSubmitting}
+                    className="w-full py-3.5 bg-white text-[#016ab7] font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <><div className="w-5 h-5 border-2 border-[#016ab7]/30 border-t-[#016ab7] rounded-full animate-spin" />Sending...</>
+                    ) : (
+                      <>Contact Us <ArrowRightIcon className="h-5 w-5" /></>
+                    )}
+                  </button>
+                  <p className="text-xs text-white/50 text-center mt-2">We respect your privacy. Your information is safe with us.</p>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes blob {
+          0%   { transform: translate(0px, 0px) scale(1); }
+          33%  { transform: translate(30px, -50px) scale(1.1); }
+          66%  { transform: translate(-20px, 20px) scale(0.9); }
+          100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob { animation: blob 7s infinite; }
+        .animation-delay-2000 { animation-delay: 2s; }
+        .animation-delay-4000 { animation-delay: 4s; }
+        .line-clamp-4 { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+      `}</style>
+    </div>
+  );
+};
+
+export default AboutPage;
